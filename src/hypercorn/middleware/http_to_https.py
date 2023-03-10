@@ -37,12 +37,7 @@ class HTTPToHTTPSRedirectMiddleware:
         await send({"type": "http.response.body"})
 
     async def _send_websocket_redirect(self, scope: WebsocketScope, send: Callable) -> None:
-        # If the HTTP version is 2 we should redirect with a https
-        # scheme not wss.
-        scheme = "wss"
-        if scope.get("http_version", "1.1") == "2":
-            scheme = "https"
-
+        scheme = "https" if scope.get("http_version", "1.1") == "2" else "wss"
         new_url = self._new_url(scheme, scope)
         await send(
             {

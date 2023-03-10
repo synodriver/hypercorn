@@ -48,7 +48,7 @@ class StatsdLogger(Logger):
 
     async def log(self, level: int, message: str, *args: Any, **kwargs: Any) -> None:
         try:
-            extra = kwargs.get("extra", None)
+            extra = kwargs.get("extra")
             if extra is not None:
                 metric = extra.get(METRIC_VAR, None)
                 value = extra.get(VALUE_VAR, None)

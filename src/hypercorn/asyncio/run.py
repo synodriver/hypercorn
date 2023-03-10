@@ -267,7 +267,5 @@ def _cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
 
 def _exception_handler(loop: asyncio.AbstractEventLoop, context: dict) -> None:
     exception = context.get("exception")
-    if isinstance(exception, ssl.SSLError):
-        pass  # Handshake failure
-    else:
+    if not isinstance(exception, ssl.SSLError):
         loop.default_exception_handler(context)

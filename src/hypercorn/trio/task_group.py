@@ -26,11 +26,10 @@ async def _handle(
         errors = trio.MultiError.filter(
             lambda exc: None if isinstance(exc, trio.Cancelled) else exc, root_exc=error
         )
-        if errors is not None:
-            await config.log.exception("Error in ASGI Framework")
-            await send(None)
-        else:
+        if errors is None:
             raise
+        await config.log.exception("Error in ASGI Framework")
+        await send(None)
     except Exception:
         await config.log.exception("Error in ASGI Framework")
     finally:

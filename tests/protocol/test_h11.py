@@ -109,10 +109,7 @@ async def test_protocol_send_stream_closed(
     keep_alive: bool, expected: Any, protocol: H11Protocol
 ) -> None:
     data = b"GET / HTTP/1.1\r\nHost: hypercorn\r\n"
-    if keep_alive:
-        data += b"\r\n"
-    else:
-        data += b"Connection: close\r\n\r\n"
+    data += b"\r\n" if keep_alive else b"Connection: close\r\n\r\n"
     await protocol.handle(RawData(data=data))
     await protocol.stream_send(Response(stream_id=1, status_code=200, headers=[]))
     await protocol.stream_send(EndBody(stream_id=1))

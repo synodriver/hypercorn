@@ -129,8 +129,7 @@ class H3Protocol:
     async def _create_server_push(
         self, stream_id: int, path: bytes, headers: List[Tuple[bytes, bytes]]
     ) -> None:
-        request_headers = [(b":method", b"GET"), (b":path", path)]
-        request_headers.extend(headers)
+        request_headers = [(b":method", b"GET"), (b":path", path), *headers]
         request_headers.extend(self.config.response_headers("h3"))
         try:
             push_stream_id = self.connection.send_push_promise(
