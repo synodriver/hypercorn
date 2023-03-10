@@ -109,12 +109,11 @@ def _build_environ(scope: HTTPScope, body: bytes) -> dict:
     server = scope.get("server") or ("localhost", 80)
     path = scope["path"]
     script_name = scope.get("root_path", "")
-    if path.startswith(script_name):
-        path = path[len(script_name) :]
-        path = path if path != "" else "/"
-    else:
+    if not path.startswith(script_name):
         raise InvalidPathError()
 
+    path = path[len(script_name) :]
+    path = path if path != "" else "/"
     environ = {
         "REQUEST_METHOD": scope["method"],
         "SCRIPT_NAME": script_name.encode("utf8").decode("latin1"),
@@ -122,7 +121,7 @@ def _build_environ(scope: HTTPScope, body: bytes) -> dict:
         "QUERY_STRING": scope["query_string"].decode("ascii"),
         "SERVER_NAME": server[0],
         "SERVER_PORT": server[1],
-        "SERVER_PROTOCOL": "HTTP/%s" % scope["http_version"],
+        "SERVER_PROTOCOL": f'HTTP/{scope["http_version"]}',
         "wsgi.version": (1, 0),
         "wsgi.url_scheme": scope.get("scheme", "http"),
         "wsgi.input": BytesIO(body),
@@ -142,10 +141,10 @@ def _build_environ(scope: HTTPScope, body: bytes) -> dict:
         elif name == "content-type":
             corrected_name = "CONTENT_TYPE"
         else:
-            corrected_name = "HTTP_%s" % name.upper().replace("-", "_")
+            corrected_name = f'HTTP_{name.upper().replace("-", "_")}'
         # HTTPbis say only ASCII chars are allowed in headers, but we latin1 just in case
         value = raw_value.decode("latin1")
         if corrected_name in environ:
-            value = environ[corrected_name] + "," + value  # type: ignore
+            value = f"{environ[corrected_name]},{value}"
         environ[corrected_name] = value
     return environ

@@ -211,11 +211,14 @@ def valid_server_name(config: Config, request: "Request") -> bool:
     if len(config.server_names) == 0:
         return True
 
-    host = ""
-    for name, value in request.headers:
-        if name.lower() == b"host":
-            host = value.decode()
-            break
+    host = next(
+        (
+            value.decode()
+            for name, value in request.headers
+            if name.lower() == b"host"
+        ),
+        "",
+    )
     return host in config.server_names
 
 

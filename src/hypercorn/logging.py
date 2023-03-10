@@ -64,22 +64,22 @@ class Logger:
             "hypercorn.error", config.errorlog, config.loglevel, sys.stderr
         )
 
-        if config.logconfig is not None:
-            if config.logconfig.startswith("json:"):
-                with open(config.logconfig[5:]) as file_:
-                    dictConfig(json.load(file_))
-            elif config.logconfig.startswith("toml:"):
-                with open(config.logconfig[5:], "rb") as file_:
-                    dictConfig(tomllib.load(file_))
-            else:
-                log_config = {
-                    "__file__": config.logconfig,
-                    "here": os.path.dirname(config.logconfig),
-                }
-                fileConfig(config.logconfig, defaults=log_config, disable_existing_loggers=False)
-        else:
+        if config.logconfig is None:
             if config.logconfig_dict is not None:
                 dictConfig(config.logconfig_dict)
+
+        elif config.logconfig.startswith("json:"):
+            with open(config.logconfig[5:]) as file_:
+                dictConfig(json.load(file_))
+        elif config.logconfig.startswith("toml:"):
+            with open(config.logconfig[5:], "rb") as file_:
+                dictConfig(tomllib.load(file_))
+        else:
+            log_config = {
+                "__file__": config.logconfig,
+                "here": os.path.dirname(config.logconfig),
+            }
+            fileConfig(config.logconfig, defaults=log_config, disable_existing_loggers=False)
 
     async def access(
         self, request: "WWWScope", response: "ResponseSummary", request_time: float
@@ -151,12 +151,9 @@ class AccessLogAtoms(dict):
             remote_addr = client[0]
         else:  # make sure not to throw UnboundLocalError
             remote_addr = f"<???{client}???>"
-        if request["type"] == "http":
-            method = request["method"]
-        else:
-            method = "GET"
+        method = request["method"] if request["type"] == "http" else "GET"
         query_string = request["query_string"].decode()
-        path_with_qs = request["path"] + ("?" + query_string if query_string else "")
+        path_with_qs = request["path"] + (f"?{query_string}" if query_string else "")
         status_code = response["status"]
         try:
             status_phrase = HTTPStatus(status_code).phrase

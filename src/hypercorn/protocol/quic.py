@@ -52,42 +52,41 @@ class QuicProtocol:
         return len(self.connections) == 0 and len(self.http_connections) == 0
 
     async def handle(self, event: Event) -> None:
-        if isinstance(event, RawData):
-            try:
-                header = pull_quic_header(Buffer(data=event.data), host_cid_length=8)
-            except ValueError:
-                return
-            if (
-                header.version is not None
-                and header.version not in self.quic_config.supported_versions
-            ):
-                data = encode_quic_version_negotiation(
-                    source_cid=header.destination_cid,
-                    destination_cid=header.source_cid,
-                    supported_versions=self.quic_config.supported_versions,
-                )
-                await self.send(RawData(data=data, address=event.address))
-                return
+        if not isinstance(event, RawData):
+            return
+        try:
+            header = pull_quic_header(Buffer(data=event.data), host_cid_length=8)
+        except ValueError:
+            return
+        if (
+            header.version is not None
+            and header.version not in self.quic_config.supported_versions
+        ):
+            data = encode_quic_version_negotiation(
+                source_cid=header.destination_cid,
+                destination_cid=header.source_cid,
+                supported_versions=self.quic_config.supported_versions,
+            )
+            await self.send(RawData(data=data, address=event.address))
+            return
 
-            connection = self.connections.get(header.destination_cid)
-            if (
-                connection is None
-                and len(event.data) >= 1200
-                and header.packet_type == PACKET_TYPE_INITIAL
-                and not self.context.terminated.is_set()
-            ):
-                connection = QuicConnection(
-                    configuration=self.quic_config,
-                    original_destination_connection_id=header.destination_cid,
-                )
-                self.connections[header.destination_cid] = connection
-                self.connections[connection.host_cid] = connection
+        connection = self.connections.get(header.destination_cid)
+        if (
+            connection is None
+            and len(event.data) >= 1200
+            and header.packet_type == PACKET_TYPE_INITIAL
+            and not self.context.terminated.is_set()
+        ):
+            connection = QuicConnection(
+                configuration=self.quic_config,
+                original_destination_connection_id=header.destination_cid,
+            )
+            self.connections[header.destination_cid] = connection
+            self.connections[connection.host_cid] = connection
 
-            if connection is not None:
-                connection.receive_datagram(event.data, event.address, now=self.context.time())
-                await self._handle_events(connection, event.address)
-        elif isinstance(event, Closed):
-            pass
+        if connection is not None:
+            connection.receive_datagram(event.data, event.address, now=self.context.time())
+            await self._handle_events(connection, event.address)
 
     async def send_all(self, connection: QuicConnection) -> None:
         for data, address in connection.datagrams_to_send(now=self.context.time()):

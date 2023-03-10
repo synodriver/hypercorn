@@ -126,10 +126,7 @@ class Config:
 
     @bind.setter
     def bind(self, value: Union[List[str], str]) -> None:
-        if isinstance(value, str):
-            self._bind = [value]
-        else:
-            self._bind = value
+        self._bind = [value] if isinstance(value, str) else value
 
     @property
     def insecure_bind(self) -> List[str]:
@@ -137,10 +134,7 @@ class Config:
 
     @insecure_bind.setter
     def insecure_bind(self, value: Union[List[str], str]) -> None:
-        if isinstance(value, str):
-            self._insecure_bind = [value]
-        else:
-            self._insecure_bind = value
+        self._insecure_bind = [value] if isinstance(value, str) else value
 
     @property
     def quic_bind(self) -> List[str]:
@@ -148,10 +142,7 @@ class Config:
 
     @quic_bind.setter
     def quic_bind(self, value: Union[List[str], str]) -> None:
-        if isinstance(value, str):
-            self._quic_bind = [value]
-        else:
-            self._quic_bind = value
+        self._quic_bind = [value] if isinstance(value, str) else value
 
     @property
     def root_path(self) -> str:
@@ -259,9 +250,7 @@ class Config:
                     os.chown(binding, self.user, self.group)
                 if self.umask is not None:
                     os.umask(current_umask)
-            elif bind.startswith("fd://"):
-                pass
-            else:
+            elif not bind.startswith("fd://"):
                 sock.bind(binding)
 
             sock.setblocking(False)
@@ -279,8 +268,10 @@ class Config:
         if self.include_server_header:
             headers.append((b"server", f"hypercorn-{protocol}".encode("ascii")))
 
-        for alt_svc_header in self.alt_svc_headers:
-            headers.append((b"alt-svc", alt_svc_header.encode()))
+        headers.extend(
+            (b"alt-svc", alt_svc_header.encode())
+            for alt_svc_header in self.alt_svc_headers
+        )
         if len(self.alt_svc_headers) == 0 and self._quic_addresses:
             from aioquic.h3.connection import H3_ALPN
 
@@ -317,7 +308,7 @@ class Config:
         """
         mappings: Dict[str, Any] = {}
         if mapping is not None:
-            mappings.update(mapping)
+            mappings |= mapping
         mappings.update(kwargs)
         config = cls()
         for key, value in mappings.items():

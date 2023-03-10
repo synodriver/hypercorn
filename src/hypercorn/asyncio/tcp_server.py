@@ -109,7 +109,7 @@ class TCPServer:
     async def _close(self) -> None:
         try:
             self.writer.write_eof()
-        except (NotImplementedError, OSError, RuntimeError):
+        except (OSError, RuntimeError):
             pass  # Likely SSL connection
 
         try:

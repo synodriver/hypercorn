@@ -60,7 +60,9 @@ def test_main_cli_override(
     path = os.path.join(os.path.dirname(__file__), "assets/config_ssl.py")
     raw_config = Config.from_pyfile(path)
 
-    hypercorn.__main__.main(["--config", f"file:{path}", flag, str(set_value), "asgi:App"])
+    hypercorn.__main__.main(
+        ["--config", f"file:{path}", flag, set_value, "asgi:App"]
+    )
     run_multiple.assert_called()
     config = run_multiple.call_args_list[0][0][0]
 

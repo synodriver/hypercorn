@@ -54,7 +54,6 @@ async def test_stream_buffer_closed(event_loop: asyncio.AbstractEventLoop) -> No
     await stream_buffer.close()
     await stream_buffer._is_empty.wait()
     await stream_buffer._paused.wait()
-    assert True
     with pytest.raises(BufferCompleteError):
         await stream_buffer.push(b"a")
 
